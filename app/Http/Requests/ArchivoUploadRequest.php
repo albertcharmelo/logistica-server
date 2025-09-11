@@ -19,6 +19,7 @@ class ArchivoUploadRequest extends FormRequest
             'origen_id' => ['required', 'integer', 'exists:personas,id'],
             'nombre_original' => ['nullable', 'string', 'max:255'],
             'tipo_archivo_id' => ['required', 'integer', 'exists:fyle_types,id'],
+            'fecha_vencimiento' => ['nullable', 'date'],
         ];
     }
 }

@@ -21,7 +21,7 @@ Route::apiResource('unidades', \App\Http\Controllers\UnidadController::class);
 /* ----------------------------------------- SUCURSALES ----------------------------------------- */
 Route::apiResource('sucursals', \App\Http\Controllers\SucursalController::class)->middleware('auth:sanctum');
 /* -------------------------------------- TIPOS DE ARCHIVO -------------------------------------- */
-Route::apiResource('file-types', \App\Http\Controllers\FileTypeController::class)->middleware('auth:sanctum');
+Route::apiResource('tipo-archivos', \App\Http\Controllers\FileTypeController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- CLIENTES ----------------------------------------- */
 Route::apiResource('clientes', \App\Http\Controllers\ClientesController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- PERSONAL ----------------------------------------- */

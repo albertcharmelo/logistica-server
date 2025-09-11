@@ -6,6 +6,7 @@ use App\Http\Requests\ArchivoDownloadRequest;
 use App\Http\Requests\ArchivoUploadRequest;
 use App\Http\Resources\ArchivoResource;
 use App\Models\Archivo;
+use App\Models\FyleType;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,6 +20,26 @@ class ArchivoController extends Controller
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
         $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
+        $fechaVencimiento = $request->input('fecha_vencimiento');
+
+        $tipo = FyleType::find($tipoId);
+        if ($tipo && $tipo->vence) {
+            if (empty($fechaVencimiento)) {
+                return response()->json([
+                    'status' => 422,
+                    'code' => 'VALIDATION_ERROR',
+                    'message' => 'El campo fecha_vencimiento es obligatorio para este tipo de archivo.',
+                    'errors' => [
+                        'fecha_vencimiento' => ['El campo fecha_vencimiento es obligatorio cuando el tipo de archivo vence.']
+                    ]
+                ], 422);
+            }
+        } else {
+            // No vence: ignorar cualquier valor enviado nulo
+            if (!$tipo || !$tipo->vence) {
+                $fechaVencimiento = null;
+            }
+        }
 
         // Build a namespaced folder e.g. documentos/identificaciones
         $path = $file->store($carpeta, $disk);
@@ -31,6 +52,7 @@ class ArchivoController extends Controller
             'nombre_original' => $original,
             'mime' => $file->getClientMimeType(),
             'size' => $file->getSize(),
+            'fecha_vencimiento' => $fechaVencimiento,
         ]);
 
         return response()->json(['success' => true, 'code' => 201, 'data' => new ArchivoResource($stored)], 201);

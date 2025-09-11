@@ -24,6 +24,7 @@ class ArchivoResource extends JsonResource
             'mime_type' => $this->mime,
             'ruta' => $this->ruta,
             'nombre_original' => $this->nombre_original,
+            'fecha_vencimiento' => $this->fecha_vencimiento?->toDateString(),
             'tipo_archivo' => $this->when($this->relationLoaded('tipo'), function () {
                 return [
                     'id' => $this->tipo?->id,

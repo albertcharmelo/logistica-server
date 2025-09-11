@@ -19,6 +19,11 @@ class Archivo extends Model
         'nombre_original',
         'mime',
         'size',
+        'fecha_vencimiento',
+    ];
+
+    protected $casts = [
+        'fecha_vencimiento' => 'date',
     ];
 
     public function persona()
