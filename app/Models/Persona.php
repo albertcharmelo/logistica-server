@@ -9,6 +9,12 @@ class Persona extends Model
 {
     use SoftDeletes;
     protected $table = 'personas';
+    public const TIPO_MAP = [
+        1 => 'chofer',
+        2 => 'dueno_chofer',
+        3 => 'transporte_temporal',
+        4 => 'otro',
+    ];
     protected $fillable = [
         'apellidos',
         'nombres',
@@ -67,5 +73,13 @@ class Persona extends Model
     public function archivos()
     {
         return $this->hasMany(Archivo::class);
+    }
+
+    public function getTipoNombreAttribute(): ?string
+    {
+        if (is_null($this->tipo)) {
+            return null;
+        }
+        return self::TIPO_MAP[$this->tipo] ?? null;
     }
 }
