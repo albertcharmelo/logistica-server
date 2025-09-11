@@ -10,10 +10,11 @@ Route::get('/user', function (Request $request) {
 
 /* ------------------------------------------ USUARIOS ------------------------------------------ */
 Route::prefix('auth')->group(function () {
+    Route::apiResource('users', \App\Http\Controllers\UserController::class);
+
     Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register']);
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
     Route::post('/reset-password', [\App\Http\Controllers\AuthController::class, 'resetPassword']);
-    Route::apiResource('users', \App\Http\Controllers\UserController::class)->middleware('auth:sanctum');
 });
 
 /* ------------------------------------------ UNIDADES ------------------------------------------ */
