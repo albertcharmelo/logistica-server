@@ -62,7 +62,38 @@ class ArchivoController extends Controller
     {
         $ruta = $request->input('ruta');
         $disk = 'public';
-        if (!Storage::disk($disk)->exists($ruta)) {
+
+        // Try to find a DB record first (covers case where file was stored and ruta is valid even if storage:link missing)
+        $archivo = Archivo::where('ruta', $ruta)->first();
+        if (!$archivo) {
+            // If no DB record, then check raw existence. If also not present => 404
+            if (!Storage::disk($disk)->exists($ruta)) {
+                return response()->json([
+                    'status' => 404,
+                    'code' => 'FILE_NOT_FOUND',
+                    'message' => 'Archivo no encontrado.',
+                ], 404);
+            }
+        }
+
+        // Build public URL for local/public disk even if symlink not yet created (frontend can still attempt fetch if served)
+        $base = rtrim(config('filesystems.disks.public.url', asset('storage')), '/');
+        $publicUrl = $base . '/' . ltrim($ruta, '/');
+
+        return response()->json(['success' => true, 'code' => 200, 'data' => [
+            'ruta' => $ruta,
+            'url' => $publicUrl,
+            'id' => $archivo?->id,
+        ]], 200);
+    }
+
+    /**
+     * Descargar por ID de archivo (alternativo cuando se tiene el ID y no la ruta directa)
+     */
+    public function downloadById(int $id)
+    {
+        $archivo = Archivo::find($id);
+        if (!$archivo) {
             return response()->json([
                 'status' => 404,
                 'code' => 'FILE_NOT_FOUND',
@@ -70,14 +101,24 @@ class ArchivoController extends Controller
             ], 404);
         }
 
-        // Build public URL for local/public disk
+        $ruta = $archivo->ruta;
+        $disk = $archivo->disk ?? 'public';
+        // File may not physically exist if cleaned up manually; still return metadata
+        $exists = Storage::disk($disk)->exists($ruta);
+
         $base = rtrim(config('filesystems.disks.public.url', asset('storage')), '/');
         $publicUrl = $base . '/' . ltrim($ruta, '/');
 
-        return response()->json(['success' => true, 'code' => 200, 'data' => [
-            'ruta' => $ruta,
-            'url' => $publicUrl,
-        ]], 200);
+        return response()->json([
+            'success' => true,
+            'code' => 200,
+            'data' => [
+                'id' => $archivo->id,
+                'ruta' => $ruta,
+                'url' => $publicUrl,
+                'existe_fisicamente' => $exists,
+            ],
+        ], 200);
     }
 
     public function destroy(int $id)
