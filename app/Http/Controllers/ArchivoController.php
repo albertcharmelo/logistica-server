@@ -20,9 +20,8 @@ class ArchivoController extends Controller
 
         $relativeDir = "documentos/{$personaId}/{$tipoId}";
         $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
-
-        // Guarda en disco "public" (storage/app/public)
-        $path = $file->storeAs($relativeDir, $filename, 'public');
+        // Guarda en S3
+        $path = $file->storeAs($relativeDir, $filename, 's3');
 
         $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
         $fechaVencimiento = $request->input('fecha_vencimiento');
@@ -47,8 +46,8 @@ class ArchivoController extends Controller
             'persona_id'        => $personaId,
             'tipo_archivo_id'   => $tipoId,
             'carpeta'           => $relativeDir,
-            'ruta'              => $path, // documentos/.../archivo.ext
-            'disk'              => 'public',
+            'ruta'              => $path,
+            'disk'              => 's3',
             'nombre_original'   => $original,
             'mime'              => $file->getClientMimeType(),
             'size'              => $file->getSize(),
@@ -60,7 +59,7 @@ class ArchivoController extends Controller
             'code'    => 201,
             'data'    => [
                 'archivo' => new ArchivoResource($stored),
-                'url'     => Storage::url($path), // /storage/documentos/...
+                'url'     => $this->buildS3PublicUrl($path),
             ],
         ], 201);
     }
@@ -68,8 +67,8 @@ class ArchivoController extends Controller
     public function download(ArchivoDownloadRequest $request)
     {
         $ruta = $request->input('ruta');
-        $archivo = Archivo::where('ruta', $ruta)->first();
-        $disk = $archivo?->disk ?? 'public';
+        $archivo = Archivo::where('ruta', $ruta)->where('disk', 's3')->first();
+        $disk = $archivo?->disk ?? 's3';
 
         if (!$archivo || !Storage::disk($disk)->exists($ruta)) {
             return response()->json([
@@ -86,7 +85,7 @@ class ArchivoController extends Controller
             'data' => [
                 'id'  => $archivo->id,
                 'ruta' => $ruta,
-                'url' => Storage::url($ruta),
+                'url' => $this->buildS3PublicUrl($ruta),
             ],
         ], 200);
 
@@ -112,7 +111,7 @@ class ArchivoController extends Controller
             ], 404);
         }
 
-        $disk = $archivo->disk ?? 'public';
+        $disk = $archivo->disk ?? 's3';
         if (!Storage::disk($disk)->exists($archivo->ruta)) {
             return response()->json([
                 'status' => 404,
@@ -127,7 +126,7 @@ class ArchivoController extends Controller
             'data' => [
                 'id' => $archivo->id,
                 'ruta' => $archivo->ruta,
-                'url' => Storage::url($archivo->ruta),
+                'url' => $this->buildS3PublicUrl($archivo->ruta),
                 'existe_fisicamente' => true,
             ],
         ], 200);
@@ -136,7 +135,7 @@ class ArchivoController extends Controller
     public function destroy(int $id)
     {
         $archivo = Archivo::findOrFail($id);
-        Storage::disk($archivo->disk ?? 'public')->delete($archivo->ruta);
+        Storage::disk($archivo->disk ?? 's3')->delete($archivo->ruta);
         $archivo->delete();
 
         return response()->json([
@@ -144,6 +143,25 @@ class ArchivoController extends Controller
             'code' => 200,
             'data' => null,
         ], 200);
+    }
+
+    /**
+     * Construye URL pública para objeto S3 (incluye compatibilidad con Supabase storage si AWS_URL no definido).
+     */
+    protected function buildS3PublicUrl(string $path): string
+    {
+        $diskConfig = config('filesystems.disks.s3');
+        $base = rtrim($diskConfig['url'] ?? '', '/');
+        if ($base) {
+            return $base . '/' . ltrim($path, '/');
+        }
+        // Fallback: https://{bucket}.s3.{region}.amazonaws.com/{path}
+        $bucket = $diskConfig['bucket'] ?? '';
+        $region = $diskConfig['region'] ?? 'us-east-1';
+        if ($bucket) {
+            return "https://{$bucket}.s3.{$region}.amazonaws.com/" . ltrim($path, '/');
+        }
+        return $path; // última opción (dev)
     }
 
     public function byPersona(Request $request, int $id)
