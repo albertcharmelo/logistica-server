@@ -22,10 +22,9 @@ class SucursalController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(SucursalStoreRequest $request)
     {
-        $data = (new SucursalStoreRequest())->merge($request->all())->validated();
-
+        $data = $request->validated();
         $sucursal = Sucursal::create($data);
 
         return response()->json(['success' => true, 'code' => 201, 'data' => new SucursalResource($sucursal)], 201);
@@ -47,14 +46,13 @@ class SucursalController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(SucursalStoreRequest $request, string $id)
     {
         $sucursal = Sucursal::find($id);
         if (!$sucursal) {
             return response()->json(['success' => false, 'code' => 404, 'message' => 'Not found'], 404);
         }
-
-        $data = (new SucursalStoreRequest())->merge($request->all())->validated();
+        $data = $request->validated();
         $sucursal->update($data);
 
         return response()->json(['success' => true, 'code' => 200, 'data' => new SucursalResource($sucursal)], 200);

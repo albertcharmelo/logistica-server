@@ -45,12 +45,9 @@ class UnidadController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(UnidadStoreRequest $request)
     {
-        $data = (new UnidadStoreRequest())->merge(
-            $request->all()
-        )->validated();
-
+        $data = $request->validated();
         $unidad = Unidad::create($data);
 
         return response()->json([
@@ -73,12 +70,10 @@ class UnidadController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UnidadStoreRequest $request, string $id)
     {
         $unidad = Unidad::findOrFail($id);
-
-        $data = (new UnidadStoreRequest())->merge($request->all())->validated();
-
+        $data = $request->validated();
         $unidad->update($data);
 
         return response()->json(['success' => true, 'code' => 200, 'data' => new UnidadResource($unidad)], 200);

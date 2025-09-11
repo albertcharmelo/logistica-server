@@ -17,7 +17,7 @@ Route::prefix('auth')->group(function () {
 });
 
 /* ------------------------------------------ UNIDADES ------------------------------------------ */
-Route::apiResource('unidades', \App\Http\Controllers\UnidadController::class)->middleware('auth:sanctum');
+Route::apiResource('unidades', \App\Http\Controllers\UnidadController::class);
 /* ----------------------------------------- SUCURSALES ----------------------------------------- */
 Route::apiResource('sucursals', \App\Http\Controllers\SucursalController::class)->middleware('auth:sanctum');
 /* -------------------------------------- TIPOS DE ARCHIVO -------------------------------------- */

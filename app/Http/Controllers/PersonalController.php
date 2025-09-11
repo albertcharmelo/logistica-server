@@ -88,9 +88,9 @@ class PersonalController extends Controller
         return response()->json(['success' => true, 'code' => 200, 'data' => PersonaResource::collection($personas)], 200);
     }
 
-    public function store(Request $request)
+    public function store(PersonaStoreRequest $request)
     {
-        $data = (new PersonaStoreRequest())->merge($request->all())->validated();
+        $data = $request->validated();
 
         return DB::transaction(function () use ($data) {
             $dueno = $data['dueno'] ?? null;
@@ -118,11 +118,10 @@ class PersonalController extends Controller
         return response()->json(['success' => true, 'code' => 200, 'data' => new PersonaResource($persona)], 200);
     }
 
-    public function update(Request $request, string $id)
+    public function update(PersonaStoreRequest $request, string $id)
     {
         $persona = Persona::findOrFail($id);
-
-        $validated = (new PersonaStoreRequest())->merge($request->all())->validated();
+        $validated = $request->validated();
         $dueno = $validated['dueno'] ?? null;
         $transporteTmp = $validated['transporte_temporal'] ?? null;
         unset($validated['dueno'], $validated['transporte_temporal']);

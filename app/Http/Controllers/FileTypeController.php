@@ -21,10 +21,9 @@ class FileTypeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(FileTypeStoreRequest $request)
     {
-        $data = (new FileTypeStoreRequest())->merge($request->all())->validated();
-
+        $data = $request->validated();
         $type = FyleType::create($data);
 
         return response()->json(['success' => true, 'code' => 201, 'data' => new FileTypeResource($type)], 201);
@@ -46,14 +45,13 @@ class FileTypeController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(FileTypeStoreRequest $request, string $id)
     {
         $type = FyleType::find($id);
         if (!$type) {
             return response()->json(['success' => false, 'code' => 404, 'message' => 'Not found'], 404);
         }
-
-        $data = (new FileTypeStoreRequest())->merge($request->all())->validated();
+        $data = $request->validated();
         $type->update($data);
 
         return response()->json(['success' => true, 'code' => 200, 'data' => new FileTypeResource($type)], 200);

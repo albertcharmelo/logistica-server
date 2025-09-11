@@ -41,10 +41,9 @@ class ClientesController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ClienteStoreRequest $request)
     {
-        $data = (new ClienteStoreRequest())->merge($request->all())->validated();
-
+        $data = $request->validated();
         $sucursales = $data['sucursales'] ?? [];
         unset($data['sucursales']);
 
@@ -73,12 +72,10 @@ class ClientesController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(ClienteStoreRequest $request, string $id)
     {
         $cliente = Cliente::findOrFail($id);
-
-        $data = (new ClienteStoreRequest())->merge($request->all())->validated();
-
+        $data = $request->validated();
         $sucursales = $data['sucursales'] ?? null;
         unset($data['sucursales']);
 
