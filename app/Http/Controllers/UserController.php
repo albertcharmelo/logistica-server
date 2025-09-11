@@ -22,16 +22,20 @@ class UserController extends Controller
         }
 
         if ($perPage = (int) $request->query('per_page')) {
-            $data = $query->paginate($perPage);
-            return response()->json(['success' => true, 'code' => 200, 'data' => [
-                'data' => UserResource::collection($data->items()),
-                'pagination' => [
-                    'total' => $data->total(),
-                    'per_page' => $data->perPage(),
-                    'current_page' => $data->currentPage(),
-                    'last_page' => $data->lastPage(),
+            $paginator = $query->paginate($perPage);
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'users' => UserResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
                 ],
-            ]]);
+            ]);
         }
 
         $users = $query->get();
