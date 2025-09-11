@@ -91,4 +91,34 @@ class ArchivoController extends Controller
             'data' => null,
         ], 200);
     }
+
+    public function byPersona(Request $request, int $id)
+    {
+        $perPage = (int) $request->query('per_page', 0);
+        $query = Archivo::where('persona_id', $id)->orderByDesc('id');
+
+        if ($perPage > 0) {
+            $paginator = $query->paginate($perPage);
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'archivos' => ArchivoResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
+            ]);
+        }
+
+        $items = $query->get();
+        return response()->json([
+            'success' => true,
+            'code' => 200,
+            'data' => ArchivoResource::collection($items),
+        ]);
+    }
 }

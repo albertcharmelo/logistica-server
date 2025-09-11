@@ -33,4 +33,5 @@ Route::middleware('auth:sanctum')->prefix('archivos')->group(function () {
     Route::post('upload', [\App\Http\Controllers\ArchivoController::class, 'upload']);
     Route::post('download', [\App\Http\Controllers\ArchivoController::class, 'download']);
     Route::delete('{id}', [\App\Http\Controllers\ArchivoController::class, 'destroy']);
+    Route::get('persona/{id}', [\App\Http\Controllers\ArchivoController::class, 'byPersona']);
 });
