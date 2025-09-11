@@ -107,7 +107,9 @@ class PersonalController extends Controller
             $dueno = $data['dueno'] ?? null;
             $transporteTmp = $data['transporte_temporal'] ?? null;
             unset($data['dueno'], $data['transporte_temporal']);
-
+            if (isset($data['estado'])) {
+                $data['estado'] = (int) $data['estado'];
+            }
             $persona = Persona::create($data);
 
             if (is_array($dueno)) {
@@ -136,7 +138,9 @@ class PersonalController extends Controller
         $dueno = $validated['dueno'] ?? null;
         $transporteTmp = $validated['transporte_temporal'] ?? null;
         unset($validated['dueno'], $validated['transporte_temporal']);
-
+        if (isset($validated['estado'])) {
+            $validated['estado'] = (int) $validated['estado'];
+        }
         return DB::transaction(function () use ($request, $persona, $validated, $dueno, $transporteTmp) {
             $persona->update($validated);
 
