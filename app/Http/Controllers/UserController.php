@@ -24,7 +24,7 @@ class UserController extends Controller
         if ($perPage = (int) $request->query('per_page')) {
             $data = $query->paginate($perPage);
             return response()->json(['success' => true, 'code' => 200, 'data' => [
-                'items' => UserResource::collection($data->items()),
+                'data' => UserResource::collection($data->items()),
                 'pagination' => [
                     'total' => $data->total(),
                     'per_page' => $data->perPage(),
