@@ -10,7 +10,7 @@ Route::get('/user', function (Request $request) {
 
 /* ------------------------------------------ USUARIOS ------------------------------------------ */
 Route::prefix('auth')->group(function () {
-    Route::apiResource('users', \App\Http\Controllers\UserController::class);
+    Route::apiResource('users', \App\Http\Controllers\UserController::class)->middleware('auth:sanctum');
 
     Route::post('/register', [\App\Http\Controllers\AuthController::class, 'register']);
     Route::post('/login', [\App\Http\Controllers\AuthController::class, 'login']);
@@ -18,7 +18,7 @@ Route::prefix('auth')->group(function () {
 });
 
 /* ------------------------------------------ UNIDADES ------------------------------------------ */
-Route::apiResource('unidades', \App\Http\Controllers\UnidadController::class);
+Route::apiResource('unidades', \App\Http\Controllers\UnidadController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- SUCURSALES ----------------------------------------- */
 Route::apiResource('sucursals', \App\Http\Controllers\SucursalController::class)->middleware('auth:sanctum');
 /* -------------------------------------- TIPOS DE ARCHIVO -------------------------------------- */
@@ -26,7 +26,7 @@ Route::apiResource('tipo-archivos', \App\Http\Controllers\FileTypeController::cl
 /* ----------------------------------------- CLIENTES ----------------------------------------- */
 Route::apiResource('clientes', \App\Http\Controllers\ClientesController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- PERSONAL ----------------------------------------- */
-Route::apiResource('personal', \App\Http\Controllers\PersonalController::class)->middleware('auth:sanctum');
+Route::apiResource('personal', \App\Http\Controllers\PersonalController::class);
 
 /* ----------------------------------------- ARCHIVOS (PERSONAL) ----------------------------------------- */
 Route::middleware('auth:sanctum')->prefix('archivos')->group(function () {

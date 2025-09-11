@@ -84,7 +84,7 @@ class PersonalController extends Controller
                 'success' => true,
                 'code' => 200,
                 'data' => [
-                    'personal' => PersonaResource::collection($paginator->items()),
+                    'personas' => PersonaResource::collection($paginator->items()),
                     'pagination' => [
                         'total' => $paginator->total(),
                         'per_page' => $paginator->perPage(),
