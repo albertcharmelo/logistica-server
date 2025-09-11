@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Dueno extends Model
 {
     use SoftDeletes;
+    protected $table = 'duenos';
     protected $fillable = [
         'persona_id',
         'fecha_nacimiento',

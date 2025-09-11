@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Sucursal extends Model
 {
     use SoftDeletes;
+    protected $table = 'sucursals';
     protected $fillable = [
         'nombre',
         'direccion',

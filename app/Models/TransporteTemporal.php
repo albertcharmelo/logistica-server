@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class TransporteTemporal extends Model
 {
     use SoftDeletes;
+    protected $table = 'transporte_temporals';
     protected $fillable = [
         'persona_id',
         'guia_remito',
