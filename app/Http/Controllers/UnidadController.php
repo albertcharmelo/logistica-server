@@ -30,11 +30,18 @@ class UnidadController extends Controller
 
         if ($perPage > 0) {
             $paginator = $query->paginate($perPage);
-            $items = collect($paginator->items());
             return response()->json([
                 'success' => true,
                 'code' => 200,
-                'data' => UnidadResource::collection($items),
+                'data' => [
+                    'unidades' => UnidadResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
             ], 200);
         }
 

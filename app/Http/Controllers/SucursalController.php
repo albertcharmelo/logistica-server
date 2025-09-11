@@ -12,10 +12,27 @@ class SucursalController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $sucursals = Sucursal::orderBy('id', 'desc')->get();
-
+        $perPage = (int) $request->query('per_page', 0);
+        $query = Sucursal::orderBy('id', 'desc');
+        if ($perPage > 0) {
+            $paginator = $query->paginate($perPage);
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'sucursals' => SucursalResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
+            ], 200);
+        }
+        $sucursals = $query->get();
         return response()->json(['success' => true, 'code' => 200, 'data' => SucursalResource::collection($sucursals)], 200);
     }
 

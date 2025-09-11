@@ -12,9 +12,27 @@ class FileTypeController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $types = FyleType::orderBy('id', 'desc')->get();
+        $perPage = (int) $request->query('per_page', 0);
+        $query = FyleType::orderBy('id', 'desc');
+        if ($perPage > 0) {
+            $paginator = $query->paginate($perPage);
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'file_types' => FileTypeResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
+            ], 200);
+        }
+        $types = $query->get();
         return response()->json(['success' => true, 'code' => 200, 'data' => FileTypeResource::collection($types)], 200);
     }
 

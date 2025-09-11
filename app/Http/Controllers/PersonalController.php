@@ -80,8 +80,19 @@ class PersonalController extends Controller
 
         if ($perPage > 0) {
             $paginator = $query->paginate($perPage);
-            $items = collect($paginator->items());
-            return response()->json(['success' => true, 'code' => 200, 'data' => PersonaResource::collection($items)], 200);
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => [
+                    'personal' => PersonaResource::collection($paginator->items()),
+                    'pagination' => [
+                        'total' => $paginator->total(),
+                        'per_page' => $paginator->perPage(),
+                        'current_page' => $paginator->currentPage(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
+            ], 200);
         }
 
         $personas = $query->get();
