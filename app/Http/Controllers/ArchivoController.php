@@ -15,11 +15,11 @@ class ArchivoController extends Controller
     public function upload(ArchivoUploadRequest $request)
     {
         $file = $request->file('archivo');
-        $disk = 'public';
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
-        // Carpeta estandarizada: documentos/{persona_id}/{tipo_archivo_id}
-        $carpeta = 'documentos/' . $personaId . '/' . $tipoId;
+        // Carpeta física directamente en public: public/documentos/{persona_id}/{tipo_archivo_id}
+        $relativeDir = 'documentos/' . $personaId . '/' . $tipoId;
+        $publicBase = public_path($relativeDir);
         $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
         $fechaVencimiento = $request->input('fecha_vencimiento');
 
@@ -42,22 +42,23 @@ class ArchivoController extends Controller
             }
         }
 
-        // Asegurar carpeta
-        if (!Storage::disk($disk)->exists($carpeta)) {
-            Storage::disk($disk)->makeDirectory($carpeta);
+        // Asegurar carpeta física
+        if (!is_dir($publicBase)) {
+            mkdir($publicBase, 0775, true);
         }
-        // Guardar con nombre hash para evitar colisiones
         $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
-        $path = $file->storeAs($carpeta, $filename, $disk);
+        $file->move($publicBase, $filename);
+        // Ruta relativa servible por el servidor web
+        $rutaRelativa = $relativeDir . '/' . $filename; // documentos/.../file.ext
         $stored = Archivo::create([
             'persona_id' => $personaId,
             'tipo_archivo_id' => $tipoId,
-            'carpeta' => $carpeta,
-            'ruta' => $path,
-            'disk' => $disk,
+            'carpeta' => $relativeDir,
+            'ruta' => $rutaRelativa,
+            'disk' => 'public_direct', // marcador custom
             'nombre_original' => $original,
-            'mime' => $file->getClientMimeType(),
-            'size' => $file->getSize(),
+            'mime' => mime_content_type(public_path($rutaRelativa)) ?: $file->getClientMimeType(),
+            'size' => filesize(public_path($rutaRelativa)),
             'fecha_vencimiento' => $fechaVencimiento,
         ]);
 
@@ -67,28 +68,19 @@ class ArchivoController extends Controller
     public function download(ArchivoDownloadRequest $request)
     {
         $ruta = $request->input('ruta');
-        $disk = 'public';
-
-        // Try to find a DB record first (covers case where file was stored and ruta is valid even if storage:link missing)
         $archivo = Archivo::where('ruta', $ruta)->first();
-        if (!$archivo) {
-            // If no DB record, then check raw existence. If also not present => 404
-            if (!Storage::disk($disk)->exists($ruta)) {
-                return response()->json([
-                    'status' => 404,
-                    'code' => 'FILE_NOT_FOUND',
-                    'message' => 'Archivo no encontrado.',
-                ], 404);
-            }
+        $fullPath = public_path($ruta);
+        if (!$archivo && !is_file($fullPath)) {
+            return response()->json([
+                'status' => 404,
+                'code' => 'FILE_NOT_FOUND',
+                'message' => 'Archivo no encontrado.',
+            ], 404);
         }
-
-        // Build public URL for local/public disk even if symlink not yet created (frontend can still attempt fetch if served)
-        $base = rtrim(config('filesystems.disks.public.url', asset('storage')), '/');
-        $publicUrl = $base . '/' . ltrim($ruta, '/');
-
+        $url = url($ruta); // url() apunta a public/
         return response()->json(['success' => true, 'code' => 200, 'data' => [
             'ruta' => $ruta,
-            'url' => $publicUrl,
+            'url' => $url,
             'id' => $archivo?->id,
         ]], 200);
     }
@@ -108,12 +100,9 @@ class ArchivoController extends Controller
         }
 
         $ruta = $archivo->ruta;
-        $disk = $archivo->disk ?? 'public';
-        // File may not physically exist if cleaned up manually; still return metadata
-        $exists = Storage::disk($disk)->exists($ruta);
-
-        $base = rtrim(config('filesystems.disks.public.url', asset('storage')), '/');
-        $publicUrl = $base . '/' . ltrim($ruta, '/');
+        $fullPath = public_path($ruta);
+        $exists = is_file($fullPath);
+        $publicUrl = url($ruta);
 
         return response()->json([
             'success' => true,
