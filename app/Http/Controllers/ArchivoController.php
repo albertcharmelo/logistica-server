@@ -16,9 +16,10 @@ class ArchivoController extends Controller
     {
         $file = $request->file('archivo');
         $disk = 'public';
-        $carpeta = trim($request->input('carpeta'), '/');
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
+        // Carpeta estandarizada: documentos/{persona_id}/{tipo_archivo_id}
+        $carpeta = 'documentos/' . $personaId . '/' . $tipoId;
         $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
         $fechaVencimiento = $request->input('fecha_vencimiento');
 
@@ -41,8 +42,13 @@ class ArchivoController extends Controller
             }
         }
 
-        // Build a namespaced folder e.g. documentos/identificaciones
-        $path = $file->store($carpeta, $disk);
+        // Asegurar carpeta
+        if (!Storage::disk($disk)->exists($carpeta)) {
+            Storage::disk($disk)->makeDirectory($carpeta);
+        }
+        // Guardar con nombre hash para evitar colisiones
+        $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
+        $path = $file->storeAs($carpeta, $filename, $disk);
         $stored = Archivo::create([
             'persona_id' => $personaId,
             'tipo_archivo_id' => $tipoId,
