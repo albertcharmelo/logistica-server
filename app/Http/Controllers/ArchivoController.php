@@ -17,9 +17,13 @@ class ArchivoController extends Controller
         $file = $request->file('archivo');
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
-        // Carpeta física directamente en public: public/documentos/{persona_id}/{tipo_archivo_id}
-        $relativeDir = 'documentos/' . $personaId . '/' . $tipoId;
-        $publicBase = public_path($relativeDir);
+
+        $relativeDir = "documentos/{$personaId}/{$tipoId}";
+        $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
+
+        // Guarda en disco "public" (storage/app/public)
+        $path = $file->storeAs($relativeDir, $filename, 'public');
+
         $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
         $fechaVencimiento = $request->input('fecha_vencimiento');
 
@@ -36,58 +40,67 @@ class ArchivoController extends Controller
                 ], 422);
             }
         } else {
-            // No vence: ignorar cualquier valor enviado nulo
-            if (!$tipo || !$tipo->vence) {
-                $fechaVencimiento = null;
-            }
+            $fechaVencimiento = null;
         }
 
-        // Asegurar carpeta física
-        if (!is_dir($publicBase)) {
-            mkdir($publicBase, 0775, true);
-        }
-        $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
-        $file->move($publicBase, $filename);
-        // Ruta relativa servible por el servidor web
-        $rutaRelativa = $relativeDir . '/' . $filename; // documentos/.../file.ext
         $stored = Archivo::create([
-            'persona_id' => $personaId,
-            'tipo_archivo_id' => $tipoId,
-            'carpeta' => $relativeDir,
-            'ruta' => $rutaRelativa,
-            'disk' => 'public_direct', // marcador custom
-            'nombre_original' => $original,
-            'mime' => mime_content_type(public_path($rutaRelativa)) ?: $file->getClientMimeType(),
-            'size' => filesize(public_path($rutaRelativa)),
+            'persona_id'        => $personaId,
+            'tipo_archivo_id'   => $tipoId,
+            'carpeta'           => $relativeDir,
+            'ruta'              => $path, // documentos/.../archivo.ext
+            'disk'              => 'public',
+            'nombre_original'   => $original,
+            'mime'              => $file->getClientMimeType(),
+            'size'              => $file->getSize(),
             'fecha_vencimiento' => $fechaVencimiento,
         ]);
 
-        return response()->json(['success' => true, 'code' => 201, 'data' => new ArchivoResource($stored)], 201);
+        return response()->json([
+            'success' => true,
+            'code'    => 201,
+            'data'    => [
+                'archivo' => new ArchivoResource($stored),
+                'url'     => Storage::url($path), // /storage/documentos/...
+            ],
+        ], 201);
     }
 
     public function download(ArchivoDownloadRequest $request)
     {
         $ruta = $request->input('ruta');
         $archivo = Archivo::where('ruta', $ruta)->first();
-        $fullPath = public_path($ruta);
-        if (!$archivo && !is_file($fullPath)) {
+        $disk = $archivo?->disk ?? 'public';
+
+        if (!$archivo || !Storage::disk($disk)->exists($ruta)) {
             return response()->json([
                 'status' => 404,
                 'code' => 'FILE_NOT_FOUND',
                 'message' => 'Archivo no encontrado.',
             ], 404);
         }
-        $url = url($ruta); // url() apunta a public/
-        return response()->json(['success' => true, 'code' => 200, 'data' => [
-            'ruta' => $ruta,
-            'url' => $url,
-            'id' => $archivo?->id,
-        ]], 200);
+
+        // // Opción 1: Devolver URL pública (recomendado)
+        return response()->json([
+            'success' => true,
+            'code' => 200,
+            'data' => [
+                'id'  => $archivo->id,
+                'ruta' => $ruta,
+                'url' => Storage::url($ruta),
+            ],
+        ], 200);
+
+        // Opción 2: Forzar descarga con headers correctos
+        // $filesystem = Storage::disk($disk);
+        // $fullPath = method_exists($filesystem, 'path')
+        //     ? $filesystem->path($ruta)
+        //     : rtrim(config("filesystems.disks.$disk.root"), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $ruta;
+
+        // return response()->download($fullPath, $archivo->nombre_original, [
+        //     'Content-Type' => $archivo->mime,
+        // ]);
     }
 
-    /**
-     * Descargar por ID de archivo (alternativo cuando se tiene el ID y no la ruta directa)
-     */
     public function downloadById(int $id)
     {
         $archivo = Archivo::find($id);
@@ -99,19 +112,23 @@ class ArchivoController extends Controller
             ], 404);
         }
 
-        $ruta = $archivo->ruta;
-        $fullPath = public_path($ruta);
-        $exists = is_file($fullPath);
-        $publicUrl = url($ruta);
+        $disk = $archivo->disk ?? 'public';
+        if (!Storage::disk($disk)->exists($archivo->ruta)) {
+            return response()->json([
+                'status' => 404,
+                'code' => 'FILE_NOT_FOUND',
+                'message' => 'Archivo no encontrado en disco.',
+            ], 404);
+        }
 
         return response()->json([
             'success' => true,
             'code' => 200,
             'data' => [
                 'id' => $archivo->id,
-                'ruta' => $ruta,
-                'url' => $publicUrl,
-                'existe_fisicamente' => $exists,
+                'ruta' => $archivo->ruta,
+                'url' => Storage::url($archivo->ruta),
+                'existe_fisicamente' => true,
             ],
         ], 200);
     }
@@ -119,7 +136,8 @@ class ArchivoController extends Controller
     public function destroy(int $id)
     {
         $archivo = Archivo::findOrFail($id);
-        $archivo->delete(); // Soft delete
+        Storage::disk($archivo->disk ?? 'public')->delete($archivo->ruta);
+        $archivo->delete();
 
         return response()->json([
             'success' => true,
