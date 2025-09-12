@@ -10,6 +10,7 @@ class DuenoResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'nombreapellido' => $this->nombreapellido,
             'persona_id' => $this->persona_id,
             'fecha_nacimiento' => optional($this->fecha_nacimiento)->toDateString(),
             'cuil' => $this->cuil,
