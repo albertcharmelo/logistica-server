@@ -15,6 +15,7 @@ class Archivo extends Model
         'tipo_archivo_id',
         'carpeta',
         'ruta',
+        'download_url',
         'disk',
         'nombre_original',
         'mime',

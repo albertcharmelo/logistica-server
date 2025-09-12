@@ -30,6 +30,7 @@ class ArchivoResource extends JsonResource
             'size' => $this->size,
             'mime_type' => $this->mime,
             'ruta' => $this->ruta,
+            'download_url' => $this->download_url,
             'nombre_original' => $this->nombre_original,
             'fecha_vencimiento' => $this->fecha_vencimiento?->toDateString(),
             'tipo_archivo' => $this->when($this->relationLoaded('tipo'), function () {

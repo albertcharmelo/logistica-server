@@ -8,6 +8,8 @@ use App\Http\Resources\ArchivoResource;
 use App\Models\Archivo;
 use App\Models\FyleType;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ArchivoController extends Controller
@@ -17,49 +19,52 @@ class ArchivoController extends Controller
         $file = $request->file('archivo');
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
-
-        $relativeDir = "documentos/{$personaId}/{$tipoId}";
-        $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
-        // Guarda en S3
-        $path = $file->storeAs($relativeDir, $filename, 's3');
-
-        $original = $request->input('nombre_original') ?: $file->getClientOriginalName();
-        $fechaVencimiento = $request->input('fecha_vencimiento');
-
-        $tipo = FyleType::find($tipoId);
-        if ($tipo && $tipo->vence) {
-            if (empty($fechaVencimiento)) {
-                return response()->json([
-                    'status' => 422,
-                    'code' => 'VALIDATION_ERROR',
-                    'message' => 'El campo fecha_vencimiento es obligatorio para este tipo de archivo.',
-                    'errors' => [
-                        'fecha_vencimiento' => ['El campo fecha_vencimiento es obligatorio cuando el tipo de archivo vence.']
-                    ]
-                ], 422);
-            }
-        } else {
-            $fechaVencimiento = null;
+        $supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
+        $serviceKey = env('SUPABASE_SERVICE_KEY');
+        $bucket = env('SUPABASE_BUCKET', 'archivos');
+        if (!$supabaseUrl || !$serviceKey) {
+            return response()->json([
+                'status' => 500,
+                'code' => 'SUPABASE_CONFIG_INCOMPLETE',
+                'message' => 'Faltan SUPABASE_URL o SUPABASE_SERVICE_KEY en .env',
+            ], 500);
         }
-
-        $stored = Archivo::create([
-            'persona_id'        => $personaId,
-            'tipo_archivo_id'   => $tipoId,
-            'carpeta'           => $relativeDir,
-            'ruta'              => $path,
-            'disk'              => 's3',
-            'nombre_original'   => $original,
-            'mime'              => $file->getClientMimeType(),
-            'size'              => $file->getSize(),
-            'fecha_vencimiento' => $fechaVencimiento,
+        $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
+        $path = "public/documentos/{$filename}";
+        $uploadEndpoint = $supabaseUrl . "/storage/v1/object/{$bucket}/{$path}";
+        $downloadUrl = $supabaseUrl . "/storage/v1/object/public/{$bucket}/{$path}";
+        $response = Http::withHeaders([
+            'Authorization' => 'Bearer ' . $serviceKey,
+            'Content-Type' => $file->getMimeType() ?: 'application/octet-stream',
+            'Cache-Control' => 'max-age=31536000, immutable',
+        ])->send('POST', $uploadEndpoint, [
+            'body' => file_get_contents($file->getRealPath()),
         ]);
-
+        if (!$response->successful()) {
+            return response()->json([
+                'success' => false,
+                'code' => $response->status(),
+                'message' => 'Error al subir el archivo a Supabase.',
+                'error_details' => $response->json(),
+            ], $response->status());
+        }
+        $stored = Archivo::create([
+            'persona_id' => $personaId,
+            'tipo_archivo_id' => $tipoId,
+            'carpeta' => "documentos",
+            'ruta' => $path,
+            'download_url' => $downloadUrl,
+            'disk' => 'supabase',
+            'nombre_original' => $file->getClientOriginalName(),
+            'mime' => $file->getClientMimeType(),
+            'size' => $file->getSize(),
+        ]);
         return response()->json([
             'success' => true,
-            'code'    => 201,
-            'data'    => [
+            'code' => 201,
+            'data' => [
                 'archivo' => new ArchivoResource($stored),
-                'url'     => $this->buildS3PublicUrl($path),
+                'url' => $downloadUrl,
             ],
         ], 201);
     }
@@ -67,37 +72,24 @@ class ArchivoController extends Controller
     public function download(ArchivoDownloadRequest $request)
     {
         $ruta = $request->input('ruta');
-        $archivo = Archivo::where('ruta', $ruta)->where('disk', 's3')->first();
-        $disk = $archivo?->disk ?? 's3';
-
-        if (!$archivo || !Storage::disk($disk)->exists($ruta)) {
+        $archivo = Archivo::where('ruta', $ruta)->first();
+        if (!$archivo) {
             return response()->json([
                 'status' => 404,
                 'code' => 'FILE_NOT_FOUND',
                 'message' => 'Archivo no encontrado.',
             ], 404);
         }
-
-        // // Opción 1: Devolver URL pública (recomendado)
+        $downloadUrl = $archivo->download_url ?? $this->inferPublicUrlFromPath($archivo->ruta);
         return response()->json([
             'success' => true,
             'code' => 200,
             'data' => [
-                'id'  => $archivo->id,
-                'ruta' => $ruta,
-                'url' => $this->buildS3PublicUrl($ruta),
+                'id' => $archivo->id,
+                'ruta' => $archivo->ruta,
+                'url' => $downloadUrl,
             ],
         ], 200);
-
-        // Opción 2: Forzar descarga con headers correctos
-        // $filesystem = Storage::disk($disk);
-        // $fullPath = method_exists($filesystem, 'path')
-        //     ? $filesystem->path($ruta)
-        //     : rtrim(config("filesystems.disks.$disk.root"), DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $ruta;
-
-        // return response()->download($fullPath, $archivo->nombre_original, [
-        //     'Content-Type' => $archivo->mime,
-        // ]);
     }
 
     public function downloadById(int $id)
@@ -110,24 +102,14 @@ class ArchivoController extends Controller
                 'message' => 'Archivo no encontrado.',
             ], 404);
         }
-
-        $disk = $archivo->disk ?? 's3';
-        if (!Storage::disk($disk)->exists($archivo->ruta)) {
-            return response()->json([
-                'status' => 404,
-                'code' => 'FILE_NOT_FOUND',
-                'message' => 'Archivo no encontrado en disco.',
-            ], 404);
-        }
-
         return response()->json([
             'success' => true,
             'code' => 200,
             'data' => [
                 'id' => $archivo->id,
                 'ruta' => $archivo->ruta,
-                'url' => $this->buildS3PublicUrl($archivo->ruta),
-                'existe_fisicamente' => true,
+                'url' => $archivo->download_url ?? $this->inferPublicUrlFromPath($archivo->ruta),
+                'existe_fisicamente' => null,
             ],
         ], 200);
     }
@@ -135,7 +117,11 @@ class ArchivoController extends Controller
     public function destroy(int $id)
     {
         $archivo = Archivo::findOrFail($id);
-        Storage::disk($archivo->disk ?? 's3')->delete($archivo->ruta);
+        try {
+            $this->supabaseDelete($archivo->ruta);
+        } catch (\Throwable $e) {
+            Log::warning('Supabase delete failed', ['e' => $e->getMessage()]);
+        }
         $archivo->delete();
 
         return response()->json([
@@ -143,6 +129,28 @@ class ArchivoController extends Controller
             'code' => 200,
             'data' => null,
         ], 200);
+    }
+
+    protected function inferPublicUrlFromPath(string $path): string
+    {
+        $supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
+        $bucket = env('SUPABASE_BUCKET', 'archivos');
+        if ($supabaseUrl) {
+            return $supabaseUrl . '/storage/v1/object/public/' . $bucket . '/' . ltrim($path, '/');
+        }
+        return $this->buildS3PublicUrl($path);
+    }
+
+    protected function supabaseDelete(string $path): void
+    {
+        $supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
+        $serviceKey = env('SUPABASE_SERVICE_KEY');
+        $bucket = env('SUPABASE_BUCKET', 'archivos');
+        if (!$supabaseUrl || !$serviceKey) {
+            return;
+        }
+        $endpoint = $supabaseUrl . '/storage/v1/object/' . $bucket . '/' . ltrim($path, '/');
+        Http::withHeaders(['Authorization' => 'Bearer ' . $serviceKey])->delete($endpoint);
     }
 
     /**
