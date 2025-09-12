@@ -10,6 +10,7 @@ class Dueno extends Model
     use SoftDeletes;
     protected $table = 'duenos';
     protected $fillable = [
+        'nombreapellido',
         'persona_id',
         'fecha_nacimiento',
         'cuil',
@@ -18,6 +19,14 @@ class Dueno extends Model
         'email',
         'telefono',
         'observaciones',
+    ];
+
+    /**
+     * Default attribute values.
+     * When no nombreapellido is provided, use 'Sin nombre'.
+     */
+    protected $attributes = [
+        'nombreapellido' => 'Sin nombre',
     ];
 
     protected $casts = [
