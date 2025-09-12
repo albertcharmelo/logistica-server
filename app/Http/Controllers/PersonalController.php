@@ -102,14 +102,20 @@ class PersonalController extends Controller
     public function store(PersonaStoreRequest $request)
     {
         $data = $request->validated();
+        // Permitir que el frontend envíe 'estado' en lugar de 'estado_id'
+        if (array_key_exists('estado', $data) && !array_key_exists('estado_id', $data)) {
+            $estadoValor = $data['estado'];
+            unset($data['estado']);
+            if ($estadoValor !== null && $estadoValor !== '') {
+                $data['estado_id'] = (int) $estadoValor;
+            }
+        }
 
         return DB::transaction(function () use ($data) {
             $dueno = $data['dueno'] ?? null;
             $transporteTmp = $data['transporte_temporal'] ?? null;
             unset($data['dueno'], $data['transporte_temporal']);
-            if (isset($data['estado'])) {
-                $data['estado'] = (int) $data['estado'];
-            }
+
             $persona = Persona::create($data);
 
             if (is_array($dueno)) {
@@ -134,35 +140,69 @@ class PersonalController extends Controller
     public function update(PersonaStoreRequest $request, string $id)
     {
         $persona = Persona::findOrFail($id);
-        $validated = $request->validated();
-        $dueno = $validated['dueno'] ?? null;
-        $transporteTmp = $validated['transporte_temporal'] ?? null;
-        unset($validated['dueno'], $validated['transporte_temporal']);
-        if (isset($validated['estado'])) {
-            $validated['estado'] = (int) $validated['estado'];
-        }
-        return DB::transaction(function () use ($request, $persona, $validated, $dueno, $transporteTmp) {
-            $persona->update($validated);
 
-            // Reemplazo total si se envía el bloque correspondiente
+        $validated = $request->validated();
+
+        // Extraer bloques relacionales antes del update principal
+        $duenoInput = $validated['dueno'] ?? null;
+        $transporteTmpInput = $validated['transporte_temporal'] ?? null;
+        unset($validated['dueno'], $validated['transporte_temporal']);
+
+        // Normalizar alias 'estado' -> 'estado_id' (siempre que venga 'estado')
+        if (array_key_exists('estado', $validated)) {
+            $estadoValor = $validated['estado'];
+            unset($validated['estado']);
+            if ($estadoValor !== null && $estadoValor !== '') {
+                $validated['estado_id'] = (int) $estadoValor;
+            } else {
+                // Permitir limpiar estado si se envía null / vacío explícito
+                $validated['estado_id'] = null;
+            }
+        }
+
+        return DB::transaction(function () use ($request, $persona, $validated, $duenoInput, $transporteTmpInput) {
+
+            // Actualizar atributos simples solo si hay algo
+            if (!empty($validated)) {
+                $persona->fill($validated);
+                if ($persona->isDirty()) {
+                    $persona->save();
+                }
+            }
+
+            // ------- Relación DUENO (hasOne) -------
             if ($request->exists('dueno')) {
-                if (is_array($dueno)) {
-                    $persona->dueno()->updateOrCreate(['persona_id' => $persona->id], $dueno);
-                } elseif (is_null($request->input('dueno'))) {
+                if (is_array($duenoInput) && count(array_filter($duenoInput, fn($v) => $v !== null && $v !== '')) > 0) {
+                    // updateOrCreate por persona_id (clave única lógica)
+                    $persona->dueno()->updateOrCreate(
+                        ['persona_id' => $persona->id],
+                        $duenoInput
+                    );
+                } else {
+                    // null, array vacío o limpieza explícita
                     $persona->dueno()->delete();
                 }
             }
 
+            // ------- Relación TRANSPORTE TEMPORAL (hasOne) -------
             if ($request->exists('transporte_temporal')) {
-                if (is_array($transporteTmp)) {
-                    $persona->transporteTemporal()->updateOrCreate(['persona_id' => $persona->id], $transporteTmp);
-                } elseif (is_null($request->input('transporte_temporal'))) {
+                if (is_array($transporteTmpInput) && count(array_filter($transporteTmpInput, fn($v) => $v !== null && $v !== '')) > 0) {
+                    $persona->transporteTemporal()->updateOrCreate(
+                        ['persona_id' => $persona->id],
+                        $transporteTmpInput
+                    );
+                } else {
                     $persona->transporteTemporal()->delete();
                 }
             }
 
-            $persona->load(['unidad', 'cliente', 'sucursal', 'dueno', 'transporteTemporal']);
-            return response()->json(['success' => true, 'code' => 200, 'data' => new PersonaResource($persona)], 200);
+            $persona->load(['unidad', 'cliente', 'sucursal', 'dueno', 'transporteTemporal', 'estado']);
+
+            return response()->json([
+                'success' => true,
+                'code' => 200,
+                'data' => new PersonaResource($persona),
+            ], 200);
         });
     }
 
