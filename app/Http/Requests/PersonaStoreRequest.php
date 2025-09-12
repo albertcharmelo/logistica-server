@@ -24,6 +24,8 @@ class PersonaStoreRequest extends FormRequest
             'unidad_id' => ['nullable', 'integer', 'exists:unidades,id'],
             'cliente_id' => ['nullable', 'integer', 'exists:clientes,id'],
             'sucursal_id' => ['nullable', 'integer', 'exists:sucursals,id'],
+            'agente_id' => ['nullable', 'integer', 'exists:users,id'],
+            'agente' => ['nullable', 'integer', 'exists:users,id'],
             'estado_id' => ['nullable', 'integer', 'exists:estados,id'],
             // Alias opcional para facilitar desde frontend
             'estado' => ['nullable', 'integer', 'exists:estados,id'],

@@ -10,8 +10,8 @@ class Persona extends Model
     use SoftDeletes;
     protected $table = 'personas';
     public const TIPO_MAP = [
-        1 => 'chofer',
-        2 => 'dueno_chofer',
+        1 => 'dueno_chofer',
+        2 => 'chofer',
         3 => 'transporte_temporal',
         4 => 'otro',
     ];
@@ -27,6 +27,7 @@ class Persona extends Model
         'unidad_id',
         'cliente_id',
         'sucursal_id',
+        'agente_id',
         'estado_id',
         'tipo',
         'observaciontarifa',
@@ -53,6 +54,11 @@ class Persona extends Model
     public function sucursal()
     {
         return $this->belongsTo(Sucursal::class);
+    }
+
+    public function agente()
+    {
+        return $this->belongsTo(User::class, 'agente_id');
     }
 
     public function estado()

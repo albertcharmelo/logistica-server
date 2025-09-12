@@ -30,7 +30,16 @@ class PersonaResource extends JsonResource
             'dueno' => $this->whenLoaded('dueno', fn() => new \App\Http\Resources\DuenoResource($this->dueno)),
             'transporte_temporal' => $this->whenLoaded('transporteTemporal', fn() => new \App\Http\Resources\TransporteTemporalResource($this->transporteTemporal)),
             'archivos' => $this->whenLoaded('archivos', fn() => \App\Http\Resources\ArchivoResource::collection($this->archivos)),
-            'agente' => null,
+            'agente' => $this->whenLoaded('agente', function () {
+                if (!$this->agente) {
+                    return null;
+                }
+                return [
+                    'id' => $this->agente->id,
+                    'name' => $this->agente->name,
+                    'email' => $this->agente->email,
+                ];
+            }),
             'estado' => $this->estado_id,
             'observaciontarifa' => $this->observaciontarifa,
             'tarifaespecial' => $this->tarifaespecial,
