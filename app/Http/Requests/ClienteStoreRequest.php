@@ -14,7 +14,7 @@ class ClienteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'codigo' => ['required', 'string', 'max:100', 'unique:clientes,codigo'],
+            'codigo' => ['required', 'string', 'max:100'],
             'nombre' => ['required', 'string', 'max:255'],
             'direccion' => ['nullable', 'string', 'max:500'],
             'documento_fiscal' => ['nullable', 'string', 'max:255'],
