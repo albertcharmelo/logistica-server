@@ -36,6 +36,9 @@ class PersonalController extends Controller
             }
         }
 
+
+
+
         if ($request->filled('tipo')) {
             $query->where('tipo', (int) $request->query('tipo'));
         }
@@ -46,6 +49,14 @@ class PersonalController extends Controller
                 $uq->where('matricula', 'like', "%$term%")
                     ->orWhere('marca', 'like', "%$term%")
                     ->orWhere('modelo', 'like', "%$term%");
+            });
+        }
+
+        // Filtrar por agente (por nombre o email)
+        if ($request->filled('agente')) {
+            $term = trim((string) $request->query('agente'));
+            $query->whereHas('agente', function ($aq) use ($term) {
+                $aq->where('name', 'like', "%$term%");
             });
         }
 
