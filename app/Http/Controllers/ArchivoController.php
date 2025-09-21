@@ -16,11 +16,14 @@ class ArchivoController extends Controller
 {
     public function upload(ArchivoUploadRequest $request)
     {
-        $file = $request->file('archivo');
+
+
+        $file = $request->file('archivo') ?? $request->file('file');
+
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
-        $supabaseUrl = rtrim(env('SUPABASE_URL', ''), '/');
-        $serviceKey = env('SUPABASE_SERVICE_KEY');
+        $supabaseUrl = rtrim(env('SUPABASE_URL', 'https://notbvdymlxpwrzecgptp.supabase.co'), '/');
+        $serviceKey = env('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdGJ2ZHltbHhwd3J6ZWNncHRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzYyNzk0NCwiZXhwIjoyMDczMjAzOTQ0fQ.MOYCWklLXtrie8sAWULx1Y-ovfTn4KCtoNp4gZtz_5Y');
         $bucket = env('SUPABASE_BUCKET', 'archivos');
         if (!$supabaseUrl || !$serviceKey) {
             return response()->json([
@@ -31,6 +34,8 @@ class ArchivoController extends Controller
         }
         $filename = uniqid('f_', true) . '.' . $file->getClientOriginalExtension();
         $path = "public/documentos/{$filename}";
+
+
         $uploadEndpoint = $supabaseUrl . "/storage/v1/object/{$bucket}/{$path}";
         $downloadUrl = $supabaseUrl . "/storage/v1/object/public/{$bucket}/{$path}";
         $response = Http::withHeaders([
@@ -38,8 +43,12 @@ class ArchivoController extends Controller
             'Content-Type' => $file->getMimeType() ?: 'application/octet-stream',
             'Cache-Control' => 'max-age=31536000, immutable',
         ])->send('POST', $uploadEndpoint, [
-            'body' => file_get_contents($file->getRealPath()),
+            'body' => $file->get(),
         ]);
+
+
+
+
         if (!$response->successful()) {
             return response()->json([
                 'success' => false,
@@ -51,7 +60,7 @@ class ArchivoController extends Controller
         $stored = Archivo::create([
             'persona_id' => $personaId,
             'tipo_archivo_id' => $tipoId,
-            'carpeta' => "documentos",
+            'carpeta' => $request->input('carpeta', 'documentos'),
             'ruta' => $path,
             'download_url' => $downloadUrl,
             'disk' => 'supabase',

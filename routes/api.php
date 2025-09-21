@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\ReclamoCommentController;
+use App\Http\Controllers\ReclamoController;
+use App\Http\Controllers\ReclamoLogController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +30,30 @@ Route::apiResource('tipo-archivos', \App\Http\Controllers\FileTypeController::cl
 Route::apiResource('clientes', \App\Http\Controllers\ClientesController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- PERSONAL ----------------------------------------- */
 Route::apiResource('personal', \App\Http\Controllers\PersonalController::class);
+
+/* -------------------------------------- TIPOS DE RECLAMO -------------------------------------- */
+Route::apiResource('reclamo-types', \App\Http\Controllers\TypeClaimController::class)->middleware('auth:sanctum');
+
+/* ------------------------------------------- RECLAMO ------------------------------------------ */
+Route::prefix('reclamos')->group(function () {
+    Route::get('/',              [ReclamoController::class, 'index']);
+    Route::post('/',             [ReclamoController::class, 'store']);
+    Route::get('/{id}',          [ReclamoController::class, 'show']);
+    Route::patch('/{id}',        [ReclamoController::class, 'update']);
+    Route::post('/{id}/archivos', [ReclamoController::class, 'attachFiles']); // attach
+    Route::delete('/{id}/archivos', [ReclamoController::class, 'detachFiles']); // detach
+    Route::delete('/{id}',       [ReclamoController::class, 'destroy']);
+
+    Route::prefix('{reclamo}')->group(function () {
+        Route::get('comments',   [ReclamoCommentController::class, 'index']);
+        Route::post('comments',  [ReclamoCommentController::class, 'store']);
+        Route::delete('comments/{id}', [ReclamoCommentController::class, 'destroy']);
+        Route::get('logs',       [ReclamoLogController::class, 'index']);
+    });
+});
+
+
+
 
 /* ----------------------------------------- ARCHIVOS (PERSONAL) ----------------------------------------- */
 Route::middleware('auth:sanctum')->prefix('archivos')->group(function () {
