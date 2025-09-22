@@ -3,6 +3,7 @@
 use App\Http\Controllers\ReclamoCommentController;
 use App\Http\Controllers\ReclamoController;
 use App\Http\Controllers\ReclamoLogController;
+use App\Http\Controllers\TestController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -29,13 +30,13 @@ Route::apiResource('tipo-archivos', \App\Http\Controllers\FileTypeController::cl
 /* ----------------------------------------- CLIENTES ----------------------------------------- */
 Route::apiResource('clientes', \App\Http\Controllers\ClientesController::class)->middleware('auth:sanctum');
 /* ----------------------------------------- PERSONAL ----------------------------------------- */
-Route::apiResource('personal', \App\Http\Controllers\PersonalController::class);
+Route::apiResource('personal', \App\Http\Controllers\PersonalController::class)->middleware('auth:sanctum');
 
 /* -------------------------------------- TIPOS DE RECLAMO -------------------------------------- */
 Route::apiResource('reclamo-types', \App\Http\Controllers\TypeClaimController::class)->middleware('auth:sanctum');
 
 /* ------------------------------------------- RECLAMO ------------------------------------------ */
-Route::prefix('reclamos')->group(function () {
+Route::middleware('auth:sanctum')->prefix('reclamos')->group(function () {
     Route::get('/',              [ReclamoController::class, 'index']);
     Route::post('/',             [ReclamoController::class, 'store']);
     Route::get('/{id}',          [ReclamoController::class, 'show']);
@@ -64,3 +65,6 @@ Route::middleware('auth:sanctum')->prefix('archivos')->group(function () {
     Route::delete('{id}', [\App\Http\Controllers\ArchivoController::class, 'destroy']);
     Route::get('persona/{id}', [\App\Http\Controllers\ArchivoController::class, 'byPersona']);
 });
+
+/* ----------------------------- TEST: Emisión de notificación por GET ----------------------------- */
+Route::middleware('auth:sanctum')->get('/test/reclamos/{id}/notify-comment', [TestController::class, 'notifyComment']);

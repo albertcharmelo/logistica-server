@@ -33,12 +33,14 @@ class Persona extends Model
         'observaciontarifa',
         'tarifaespecial',
         'observaciones',
+        'fecha_alta',
     ];
 
     protected $casts = [
         'combustible' => 'boolean',
         'pago' => 'decimal:2',
         'tarifaespecial' => 'integer',
+        'fecha_alta' => 'date',
     ];
 
     public function unidad()

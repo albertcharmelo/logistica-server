@@ -137,6 +137,12 @@ class PersonalController extends Controller
 
             $persona = Persona::create($data);
 
+            // If fecha_alta provided, keep created_at consistent (optional requirement)
+            if (!empty($data['fecha_alta'])) {
+                $persona->created_at = $data['fecha_alta'] . ' 00:00:00';
+                $persona->save();
+            }
+
             if (is_array($dueno)) {
                 $persona->dueno()->create($dueno);
             }
@@ -181,6 +187,12 @@ class PersonalController extends Controller
         }
         return DB::transaction(function () use ($request, $persona, $validated, $dueno, $transporteTmp) {
             $persona->update($validated);
+
+            // If fecha_alta provided, keep created_at consistent (optional requirement)
+            if ($request->filled('fecha_alta')) {
+                $persona->created_at = $validated['fecha_alta'] . ' 00:00:00';
+                $persona->save();
+            }
 
             // Reemplazo total si se envía el bloque correspondiente
             if ($request->exists('dueno')) {

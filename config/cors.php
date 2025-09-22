@@ -15,7 +15,11 @@ return [
     |
     */
 
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    'paths' => [
+        'api/*',
+        'sanctum/csrf-cookie',
+        'broadcasting/auth', // permitir auth de canales],
+    ],
 
     'allowed_methods' => ['*'],
 
@@ -23,7 +27,14 @@ return [
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['*'],
+    'allowed_headers' => [
+        'Content-Type',
+        'X-Requested-With',
+        'X-Socket-Id',
+        'Authorization',
+        'Accept',
+        'Origin',
+    ],
 
     'exposed_headers' => [],
 

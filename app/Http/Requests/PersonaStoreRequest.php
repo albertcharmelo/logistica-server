@@ -34,6 +34,7 @@ class PersonaStoreRequest extends FormRequest
             'observaciontarifa' => ['nullable', 'string'],
             'tarifaespecial' => ['nullable', 'integer', 'in:0,1'],
             'observaciones' => ['nullable', 'string'],
+            'fecha_alta' => ['nullable', 'date'],
 
             'dueno' => ['nullable', 'array'],
             'dueno.fecha_nacimiento' => ['nullable', 'date'],

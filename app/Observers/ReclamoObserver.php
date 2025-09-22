@@ -2,6 +2,7 @@
 
 namespace App\Observers;
 
+use App\Events\ReclamoStatusChanged;
 use App\Models\Reclamo;
 use App\Models\ReclamoComment;
 use App\Models\ReclamoLog;
@@ -23,7 +24,7 @@ class ReclamoObserver
                 'changed_by' => Auth::id(),
             ]);
 
-
+            event(new ReclamoStatusChanged($reclamo, $old, $reclamo->status));
             // Comentario del sistema
             ReclamoComment::create([
                 'reclamo_id'  => $reclamo->id,

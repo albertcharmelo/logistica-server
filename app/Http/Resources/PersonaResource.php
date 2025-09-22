@@ -24,6 +24,7 @@ class PersonaResource extends JsonResource
             'full_name' => trim(($this->nombres ?? '') . ' ' . ($this->apellidos ?? '')),
             'created_at' => $this->created_at?->toDateTimeString(),
             'updated_at' => $this->updated_at?->toDateTimeString(),
+            'fecha_alta' => $this->fecha_alta?->toDateString(),
             'unidad' => $this->whenLoaded('unidad', fn() => new \App\Http\Resources\UnidadResource($this->unidad)),
             'cliente' => $this->whenLoaded('cliente', fn() => new \App\Http\Resources\ClienteResource($this->cliente)),
             'sucursal' => $this->whenLoaded('sucursal', fn() => new \App\Http\Resources\SucursalResource($this->sucursal)),

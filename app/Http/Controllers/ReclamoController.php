@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ReclamoFilesAttached;
 use App\Http\Requests\ReclamoAttachFilesRequest;
 use App\Http\Requests\ReclamoStoreRequest;
 use App\Http\Requests\ReclamoUpdateRequest;
@@ -9,6 +10,8 @@ use App\Http\Resources\ReclamoResource;
 use App\Models\Reclamo;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class ReclamoController extends Controller
 {
@@ -117,9 +120,11 @@ class ReclamoController extends Controller
         // status inicial por convención
         $payload['status'] = $payload['status'] ?? 'creado';
 
-        // setear creador automáticamente
-        $payload['creator_id'] = auth()->id() ?: null;
 
+
+        // setear creador automáticamente desde el usuario autenticado por Sanctum
+        $payload['creator_id'] = $request->user()?->id;
+        Log::info('ReclamoController@store: creating reclamo', ['payload' => $payload]);
         $reclamo = Reclamo::create($payload);
 
         // comentario de sistema inicial
@@ -208,7 +213,7 @@ class ReclamoController extends Controller
         ])->loadCount('comments');
 
         $this->aliasPersona([$reclamo]);
-
+        event(new ReclamoFilesAttached($reclamo, $request->archivo_ids));
         return response()->json([
             'success' => true,
             'code'    => 200,
