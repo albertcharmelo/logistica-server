@@ -18,4 +18,9 @@ class Sucursal extends Model
     {
         return $this->belongsTo(Cliente::class);
     }
+
+    public function personas()
+    {
+        return $this->hasMany(Persona::class);
+    }
 }
