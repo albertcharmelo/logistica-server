@@ -15,6 +15,7 @@ class PersonaStoreRequest extends FormRequest
     {
         return [
             'apellidos' => ['nullable', 'string', 'max:255'],
+            'patente' => ['nullable', 'string', 'max:100'],
             'nombres' => ['required', 'string', 'max:255'],
             'cuil' => ['required', 'string', 'max:50'],
             'telefono' => ['nullable', 'string', 'max:50'],

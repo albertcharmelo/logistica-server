@@ -16,6 +16,7 @@ class Persona extends Model
         4 => 'otro',
     ];
     protected $fillable = [
+        'patente',
         'apellidos',
         'nombres',
         'cuil',
