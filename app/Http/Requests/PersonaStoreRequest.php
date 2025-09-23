@@ -14,7 +14,7 @@ class PersonaStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'apellidos' => ['string', 'max:255'],
+            'apellidos' => ['nullable', 'string', 'max:255'],
             'nombres' => ['required', 'string', 'max:255'],
             'cuil' => ['required', 'string', 'max:50'],
             'telefono' => ['nullable', 'string', 'max:50'],
