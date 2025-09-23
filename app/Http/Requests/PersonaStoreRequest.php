@@ -37,6 +37,7 @@ class PersonaStoreRequest extends FormRequest
             'fecha_alta' => ['nullable', 'date'],
 
             'dueno' => ['nullable', 'array'],
+            'dueno.nombreapellido' => ['nullable', 'string', 'max:255'],
             'dueno.fecha_nacimiento' => ['nullable', 'date'],
             'dueno.cuil' => ['nullable', 'string', 'max:50'],
             'dueno.cuil_cobrador' => ['nullable', 'string', 'max:50'],
