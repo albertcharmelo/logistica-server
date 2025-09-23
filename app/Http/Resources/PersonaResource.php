@@ -12,6 +12,7 @@ class PersonaResource extends JsonResource
             'id' => $this->id,
             'nombre' => $this->nombres,
             'apellido' => $this->apellidos,
+            'patente' => $this->patente,
             'documento' => $this->cuil,
             'email' => $this->email,
             'telefono' => $this->telefono,
