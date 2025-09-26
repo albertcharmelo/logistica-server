@@ -22,8 +22,8 @@ class ArchivoController extends Controller
 
         $personaId = (int) $request->input('origen_id');
         $tipoId = (int) $request->input('tipo_archivo_id');
-        $supabaseUrl = rtrim(env('SUPABASE_URL', 'https://notbvdymlxpwrzecgptp.supabase.co'), '/');
-        $serviceKey = env('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5vdGJ2ZHltbHhwd3J6ZWNncHRwIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NzYyNzk0NCwiZXhwIjoyMDczMjAzOTQ0fQ.MOYCWklLXtrie8sAWULx1Y-ovfTn4KCtoNp4gZtz_5Y');
+        $supabaseUrl = rtrim(env('SUPABASE_URL', 'https://tigmyspvafopmsxthkvi.supabase.co'), '/');
+        $serviceKey = env('SUPABASE_SERVICE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRpZ215c3B2YWZvcG1zeHRoa3ZpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5NDIzOTAsImV4cCI6MjA3MzUxODM5MH0.8KApjaRExDSdv6THhkw7VCB_vvVZa6Lv6dJQaTuDxso');
         $bucket = env('SUPABASE_BUCKET', 'archivos');
         if (!$supabaseUrl || !$serviceKey) {
             return response()->json([
