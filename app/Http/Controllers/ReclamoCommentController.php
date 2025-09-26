@@ -73,7 +73,7 @@ class ReclamoCommentController extends Controller
         ]);
 
         // si tienes eventos/WS:
-        event(new ReclamoCommentCreated($comment));
+        // event(new ReclamoCommentCreated($comment));
 
         return new ReclamoCommentResource($comment->fresh(['agente']));
     }
