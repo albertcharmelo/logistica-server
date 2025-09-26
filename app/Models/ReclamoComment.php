@@ -11,11 +11,12 @@ class ReclamoComment extends Model
 
     protected $fillable = [
         'reclamo_id',
-        'sender_type',       // 'user' | 'persona' (legacy) | etc.
-        'sender_user_id',
+        'sender_type',
+        'creator_id',          // 👈 nuevo
         'sender_persona_id',
-        'creator_id',
-        'body',
+        'sender_user_id',
+        'message',
+        'meta',
     ];
 
     public function reclamo()

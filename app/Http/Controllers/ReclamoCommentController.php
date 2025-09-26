@@ -66,10 +66,10 @@ class ReclamoCommentController extends Controller
 
         $comment = ReclamoComment::create([
             'reclamo_id'       => $reclamo->id,
-            'sender_type'      => 'user',
+            'sender_type'      => 'agente',
             'sender_user_id'   => $user->id,
             'creator_id'       => $user->id,
-            'body'             => $request->string('body'),
+            'message'          => $request->string('message'),
         ]);
 
         // si tienes eventos/WS:
