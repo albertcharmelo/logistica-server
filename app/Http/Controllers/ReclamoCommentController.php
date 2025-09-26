@@ -56,67 +56,26 @@ class ReclamoCommentController extends Controller
      * Crear comentario
      * POST /api/reclamos/{reclamo}/comments
      */
-    public function store(ReclamoCommentStoreRequest $request, int $reclamoId)
+    public function store(Request $request, Reclamo $reclamo)
     {
-        $payload = $request->validated();
-        $payload['reclamo_id'] = $reclamoId;
+        $request->validate([
+            'body' => ['required', 'string', 'min:1', 'max:5000'],
+        ]);
 
-        // Reclamo vinculado
-        $reclamo = Reclamo::findOrFail($reclamoId);
+        $user = Auth::user(); // cualquiera logueado
 
-        // Derivar el autor autenticado
-        $authUserId = (int) ($request->user()?->id ?? 0);
+        $comment = ReclamoComment::create([
+            'reclamo_id'       => $reclamo->id,
+            'sender_type'      => 'user',
+            'sender_user_id'   => $user->id,
+            'creator_id'       => $user->id,
+            'body'             => $request->string('body'),
+        ]);
 
-        // Respetar el sender_type que deriva el FormRequest. Si el emisor es 'creador',
-        // forzamos creator_id = usuario autenticado. Si es 'agente', no tocar creator_id.
-        // Si es 'persona', no tocar creator_id (persona no es user).
-        $senderType = $payload['sender_type'] ?? null;
-        if ($senderType === 'creador' && $authUserId > 0) {
-            $payload['creator_id'] = $authUserId;
-            // aseguramos no marcar agente_id al mismo tiempo
-            unset($payload['agente_id']);
-        }
+        // si tienes eventos/WS:
+        event(new ReclamoCommentCreated($comment));
 
-        // Crear comentario con los IDs resultantes
-        $comment = \App\Models\ReclamoComment::create($payload);
-        $comment->load(['persona', 'agente', 'creator']);
-        event(new ReclamoCommentCreated($comment)); // Disparar el evento de comentario creado
-
-        // Notificar por websocket al responsable/creador si corresponde
-        // Autor: si fue creador, es el auth user; si fue agente, es el agente; si persona, ningún user
-        $authorUserId = null;
-        if (($payload['sender_type'] ?? null) === 'creador') {
-            $authorUserId = $authUserId ?: null;
-        } elseif (($payload['sender_type'] ?? null) === 'agente') {
-            $authorUserId = $payload['agente_id'] ?? null;
-        }
-
-        // Si el responsable (agente) existe y no es el autor
-        if ($reclamo->agente_id && $reclamo->agente_id !== $authorUserId) {
-            event(new ReclamoCommentNotification(
-                userId: (int) $reclamo->agente_id,
-                reclamoId: (int) $reclamo->id,
-                commentId: (int) $comment->id,
-                message: 'Nuevo comentario en tu reclamo asignado',
-                role: 'agente',
-            ));
-        }
-        // Si el creador existe y no es el autor
-        $creatorUser = $reclamo->creator_id ?? $reclamo->created_by ?? null;
-        if ($creatorUser && $creatorUser !== $authorUserId) {
-            event(new ReclamoCommentNotification(
-                userId: (int) $creatorUser,
-                reclamoId: (int) $reclamo->id,
-                commentId: (int) $comment->id,
-                message: 'Nuevo comentario en el reclamo que creaste',
-                role: 'creador',
-            ));
-        }
-        return response()->json([
-            'success' => true,
-            'code'    => 201,
-            'data'    => new \App\Http\Resources\ReclamoCommentResource($comment),
-        ], 201);
+        return new ReclamoCommentResource($comment->fresh(['agente']));
     }
     /**
      * Borrado lógico del comentario

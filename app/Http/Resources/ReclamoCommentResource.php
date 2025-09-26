@@ -18,15 +18,8 @@ class ReclamoCommentResource extends JsonResource
             'meta'               => $this->meta,
             'created_at'         => optional($this->created_at)->toISOString(),
             'updated_at'         => optional($this->updated_at)->toISOString(),
-
+            'author_name' => $this->author_name, // <- accessor del modelo
             // opcional: info básica del remitente para UI
-            'persona' => $this->whenLoaded('persona', function () {
-                return [
-                    'id'       => $this->persona->id,
-                    'nombres'  => $this->persona->nombres,
-                    'apellidos' => $this->persona->apellidos,
-                ];
-            }),
             'agente' => $this->whenLoaded('agente', function () {
                 return [
                     'id'   => $this->agente->id,
@@ -34,13 +27,7 @@ class ReclamoCommentResource extends JsonResource
                     'email' => $this->agente->email,
                 ];
             }),
-            'creator' => $this->whenLoaded('creator', function () {
-                return [
-                    'id'    => $this->creator->id,
-                    'name'  => $this->creator->name,
-                    'email' => $this->creator->email,
-                ];
-            })
+
         ];
     }
 }

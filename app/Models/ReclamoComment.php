@@ -11,34 +11,42 @@ class ReclamoComment extends Model
 
     protected $fillable = [
         'reclamo_id',
-        'sender_type',
-        'creator_id',          // 👈 nuevo
-        'sender_persona_id',
+        'sender_type',       // 'user' | 'persona' (legacy) | etc.
         'sender_user_id',
-        'message',
-        'meta',
-    ];
-
-    protected $casts = [
-        'meta' => 'array',
+        'sender_persona_id',
+        'creator_id',
+        'body',
     ];
 
     public function reclamo()
     {
         return $this->belongsTo(Reclamo::class);
     }
-
-    public function persona()
-    {
-        return $this->belongsTo(Persona::class, 'sender_persona_id');
-    }
-
     public function agente()
     {
         return $this->belongsTo(User::class, 'sender_user_id');
     }
-    public function creator() // opcional para mostrar en UI
+    public function persona()
+    {
+        return $this->belongsTo(Persona::class, 'sender_persona_id');
+    }
+    public function creator()
     {
         return $this->belongsTo(User::class, 'creator_id');
+    }
+
+    // 👇 Nombre siempre disponible para la vista/API
+    protected $appends = ['author_name'];
+
+    public function getAuthorNameAttribute(): string
+    {
+        if ($this->sender_type === 'user' && $this->agente) {
+            return (string) $this->agente->name;
+        }
+        if ($this->sender_type === 'persona' && $this->persona) {
+            // ajusta al campo real (full_name, nombre, etc.)
+            return (string) ($this->persona->full_name ?? $this->persona->nombre ?? 'Persona');
+        }
+        return 'Usuario';
     }
 }
