@@ -59,7 +59,7 @@ class ReclamoCommentController extends Controller
     public function store(Request $request, Reclamo $reclamo)
     {
         $request->validate([
-            'body' => ['required', 'string', 'min:1', 'max:5000'],
+            'message' => ['required', 'string', 'min:1', 'max:5000'],
         ]);
 
         $user = Auth::user(); // cualquiera logueado
