@@ -129,7 +129,11 @@ class ArchivoController extends Controller
         try {
             $this->supabaseDelete($archivo->ruta);
         } catch (\Throwable $e) {
-            Log::warning('Supabase delete failed', ['e' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'code' => 500,
+                'message' => 'Error al eliminar el archivo en Supabase: ' . $e->getMessage(),
+            ], 500);
         }
         $archivo->delete();
 

@@ -19,6 +19,11 @@ class ReclamoComment extends Model
         'meta',
     ];
 
+    // <-- clave: esto hace que Eloquent guarde/lea JSON automáticamente
+    protected $casts = [
+        'meta' => 'array',
+    ];
+
     public function reclamo()
     {
         return $this->belongsTo(Reclamo::class);
