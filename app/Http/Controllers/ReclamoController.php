@@ -124,7 +124,7 @@ class ReclamoController extends Controller
 
         // setear creador automáticamente desde el usuario autenticado por Sanctum
         $payload['creator_id'] = $request->user()?->id;
-        Log::info('ReclamoController@store: creating reclamo', ['payload' => $payload]);
+
         $reclamo = Reclamo::create($payload);
 
         // comentario de sistema inicial
