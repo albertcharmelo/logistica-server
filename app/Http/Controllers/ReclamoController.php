@@ -179,7 +179,7 @@ class ReclamoController extends Controller
     public function update(ReclamoUpdateRequest $request, int $id)
     {
         $reclamo = Reclamo::findOrFail($id);
-        $reclamo->fill($request->only(['agente_id', 'reclamo_type_id', 'detalle', 'status']))->save();
+        $reclamo->fill($request->only(['agente_id', 'reclamo_type_id', 'detalle', 'status', 'fecha_alta']))->save();
 
         $reclamo->load([
             'persona:id,apellidos,nombres,telefono,email,cliente_id,sucursal_id,unidad_id,agente_id',

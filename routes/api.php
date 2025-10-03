@@ -1,11 +1,20 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\NotificacionesController;
+
 use App\Http\Controllers\ReclamoCommentController;
 use App\Http\Controllers\ReclamoController;
 use App\Http\Controllers\ReclamoLogController;
 use App\Http\Controllers\TestController;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
+// Notifications routes
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::get('/notifications', [NotificacionesController::class, 'index']);
+    Route::patch('/notifications/{id}/read', [NotificacionesController::class, 'markRead']);
+    Route::post('/notifications/read-all', [NotificacionesController::class, 'markAllRead']);
+    Route::delete('/notifications/{id}', [NotificacionesController::class, 'destroy']);
+});
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -67,4 +76,4 @@ Route::middleware('auth:sanctum')->prefix('archivos')->group(function () {
 });
 
 /* ----------------------------- TEST: Emisión de notificación por GET ----------------------------- */
-Route::middleware('auth:sanctum')->get('/test/reclamos/{id}/notify-comment', [TestController::class, 'notifyComment']);
+Route::get('/test/reclamos/{id}/notify-comment', [TestController::class, 'notifyComment']);

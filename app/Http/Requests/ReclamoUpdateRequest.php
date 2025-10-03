@@ -18,6 +18,7 @@ class ReclamoUpdateRequest extends FormRequest
             'reclamo_type_id' => ['nullable', 'integer', 'exists:reclamo_types,id'],
             'detalle'         => ['nullable', 'string'],
             'status'          => ['nullable', 'string', 'in:creado,asignado_al_area,en_proceso,pendiente_de_resolucion,solucionado'],
+            'fecha_alta' => ['sometimes', 'nullable', 'date'], // <-- opcional
         ];
     }
 }

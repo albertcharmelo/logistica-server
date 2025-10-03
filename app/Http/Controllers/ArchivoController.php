@@ -7,6 +7,8 @@ use App\Http\Requests\ArchivoUploadRequest;
 use App\Http\Resources\ArchivoResource;
 use App\Models\Archivo;
 use App\Models\FyleType;
+use App\Models\Notificacion;
+use App\Models\Persona;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -68,6 +70,21 @@ class ArchivoController extends Controller
             'mime' => $file->getClientMimeType(),
             'size' => $file->getSize(),
         ]);
+
+        // Notificar al agente de la persona cuando se adjunta un archivo
+        if ($personaId > 0) {
+            $persona = Persona::find($personaId);
+            $agenteId = $persona?->agente_id;
+            if ($agenteId) {
+                Notificacion::create([
+                    'user_id'     => (int) $agenteId,
+                    'entity_type' => 'persona',
+                    'entity_id'   => (int) $personaId,
+                    'type'        => 'adjunto',
+                    'description' => 'Se adjuntó un archivo a la persona #' . $personaId,
+                ]);
+            }
+        }
         return response()->json([
             'success' => true,
             'code' => 201,

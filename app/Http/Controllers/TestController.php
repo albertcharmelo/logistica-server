@@ -2,70 +2,65 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\ReclamoCommentNotification;
+use App\Models\Notificacion;
 use App\Models\Reclamo;
+use App\Models\ReclamoComment;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class TestController extends Controller
 {
     /**
-     * GET /api/test/reclamos/{id}/notify-comment?message=...&target=agente|creador|both
-     * Emits websocket notifications to the reclamo's agente and/or creator without persisting a comment.
-     * Blocked in production.
+     * Simula la inserción de un comentario y crea notificaciones para el reclamo dado.
+     * GET /api/test/reclamos/{id}/notify-comment?user_id=6
      */
-    public function notifyComment(Request $request, int $id)
+    public function notifyComment(Request $request, int $reclamoId): JsonResponse
     {
-        if (app()->environment('production')) {
-            return response()->json([
-                'success' => false,
-                'code'    => 403,
-                'message' => 'Test endpoint disabled in production',
-            ], 403);
+        // Autor del comentario (por defecto 6 si no se envía y no hay auth)
+        $authorId = (int) $request->query('user_id', $request->user()?->id ?? 6);
+        $mode = (string) $request->query('to', 'counterpart'); // 'self' | 'counterpart'
+        $reclamo = Reclamo::findOrFail($reclamoId);
+
+        // Crear comentario simulado como si lo hiciera el userId
+        $comment = ReclamoComment::create([
+            'reclamo_id'       => $reclamo->id,
+            'sender_type'      => 'agente',
+            'sender_user_id'   => $authorId,
+            'creator_id'       => $authorId,
+            'message'          => 'Comentario de prueba para notificación',
+        ]);
+
+        $recipientId = null;
+        if ($mode === 'self') {
+            // Notificar al propio usuario (auth o fallback al authorId)
+            $recipientId = (int) ($request->user()?->id ?? $authorId);
+        } else {
+            // Regla de negocio normal: notificar a la contraparte
+            $creatorId = $reclamo->creator_id ?? $reclamo->created_by ?? null;
+            $agentId   = $reclamo->agente_id ?? null;
+            if ($agentId && $authorId === (int)$agentId) {
+                $recipientId = $creatorId;
+            } elseif ($creatorId && $authorId === (int)$creatorId) {
+                $recipientId = $agentId;
+            }
         }
 
-        $message = (string) $request->query('message', 'Comentario de prueba');
-        $target  = (string) $request->query('target', 'both'); // agente|creador|both
-
-        $reclamo = Reclamo::find($id);
-        if (!$reclamo) {
-            return response()->json([
-                'success' => false,
-                'code'    => 404,
-                'message' => 'Reclamo no encontrado',
-            ], 404);
-        }
-
-        $sent = [];
-        if (in_array($target, ['agente', 'both'], true) && $reclamo->agente_id) {
-            event(new ReclamoCommentNotification(
-                userId: (int) $reclamo->agente_id,
-                reclamoId: (int) $reclamo->id,
-                commentId: 0,
-                message: $message,
-                role: 'agente'
-            ));
-            $sent[] = 'agente';
-        }
-        $creatorId = $reclamo->creator_id ?? $reclamo->created_by ?? null;
-        if (in_array($target, ['creador', 'both'], true) && $creatorId) {
-            event(new ReclamoCommentNotification(
-                userId: (int) $creatorId,
-                reclamoId: (int) $reclamo->id,
-                commentId: 0,
-                message: $message,
-                role: 'creador'
-            ));
-            $sent[] = 'creador';
+        if ($recipientId) {
+            Notificacion::create([
+                'user_id'     => (int) $recipientId,
+                'entity_type' => 'reclamo',
+                'entity_id'   => $reclamo->id,
+                'type'        => 'comentario',
+                'description' => 'Nuevo comentario en el reclamo #' . $reclamo->id,
+            ]);
         }
 
         return response()->json([
-            'success' => true,
-            'code'    => 200,
-            'data'    => [
-                'targets' => $sent,
-                'reclamo_id' => $reclamo->id,
-                'message' => $message,
-            ],
-        ], 200);
+            'message' => 'Comentario y notificación simulados',
+            'comment_id' => $comment->id,
+            'author_id' => $authorId,
+            'recipient_id' => $recipientId,
+            'mode' => $mode,
+        ]);
     }
 }

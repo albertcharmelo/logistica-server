@@ -25,6 +25,7 @@ class ReclamoResource extends JsonResource
             'detalle'        => $this->detalle,
             'status'         => $this->status,              // creado, asignado_al_area, en_proceso, pendiente_resolucion, solucionado
             'created_at'     => optional($this->created_at)->toISOString(),
+            'fecha_alta'     => optional($this->fecha_alta)->format('Y-m-d'),
             'updated_at'     => optional($this->updated_at)->toISOString(),
             'deleted_at'     => optional($this->deleted_at)->toISOString(),
 

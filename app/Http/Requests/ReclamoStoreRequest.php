@@ -21,6 +21,7 @@ class ReclamoStoreRequest extends FormRequest
             'status'          => ['nullable', 'string', 'in:creado,asignado_al_area,en_proceso,pendiente_de_resolucion,solucionado'],
             'archivo_ids'     => ['array'],
             'archivo_ids.*'   => ['integer', 'exists:archivos,id'],
+            'fecha_alta' => ['nullable', 'date'], // <-- aceptar fecha
         ];
     }
 }

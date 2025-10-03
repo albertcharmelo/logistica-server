@@ -15,7 +15,12 @@ class Reclamo extends Model
         'agente_id',
         'detalle',
         'status',
-        'creator_id', // 👈 nuevo
+        'fecha_alta', // <-- permitir asignación masiva
+    ];
+
+    protected $casts = [
+        // ...otros casts
+        'fecha_alta' => 'datetime', // o 'date' si usas campo date
     ];
 
     public function creator()
